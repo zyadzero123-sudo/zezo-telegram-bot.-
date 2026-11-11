@@ -1,77 +1,54 @@
 
-const { Telegraf, Markup } = require("telegraf");
+const express = require("express");
+const { Telegraf } = require("telegraf");
 
-const BOT_TOKEN = process.env.BOT_TOKEN;
+const app = express();
+const bot = new Telegraf(process.env.BOT_TOKEN);
 
-if (!BOT_TOKEN) {
-  throw new Error("BOT_TOKEN is missing!");
-}
+app.use(express.json());
 
-const bot = new Telegraf(BOT_TOKEN);
+app.get("/", (req, res) => {
+  res.send("Zezo Bot is running!");
+});
 
-bot.start(async (ctx) => {
-  await ctx.reply(
-    `أهلاً بيك في Zezo Bot 🤖❤️
+app.post("/telegram", (req, res, next) => {
+  bot.handleUpdate(req.body)
+    .then(() => res.sendStatus(200))
+    .catch(next);
+});
 
-اختار الخدمة اللي محتاجها:`,
-    Markup.inlineKeyboard([
-      [Markup.button.callback("📚 منصات التعليم", "platforms")],
-      [Markup.button.callback("📊 متابعة التقدم", "progress")],
-      [Markup.button.callback("🧠 مساعد الدراسة", "study")],
-      [Markup.button.callback("ℹ️ معلومات البوت", "about")]
-    ])
+bot.start((ctx) => {
+  ctx.reply(
+    "أهلاً بيك في Zezo Bot 🤖❤️\n\nاختار الخدمة اللي محتاجها:",
+    {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: "📚 منصات التعليم", callback_data: "platforms" }],
+          [{ text: "📊 متابعة التقدم", callback_data: "progress" }],
+          [{ text: "🧠 مساعد الدراسة", callback_data: "study" }]
+        ]
+      }
+    }
   );
 });
 
-bot.action("platforms", async (ctx) => {
-  await ctx.answerCbQuery();
-  await ctx.editMessageText(
-    "📚 منصات التعليم\n\nاختار المنصة:",
-    Markup.inlineKeyboard([
-      [Markup.button.callback("💻 Qureo", "qureo")],
-      [Markup.button.callback("💰 الثقافة المالية", "finance")],
-      [Markup.button.callback("⬅️ الرئيسية", "home")]
-    ])
-  );
+bot.action("platforms", (ctx) => {
+  ctx.answerCbQuery();
+  ctx.reply("📚 قسم منصات التعليم");
 });
 
-bot.action("qureo", async (ctx) => {
-  await ctx.answerCbQuery();
-  await ctx.reply("💻 منصة Qureo\nسيتم إضافة متابعة الدروس والتقدم قريباً.");
+bot.action("progress", (ctx) => {
+  ctx.answerCbQuery();
+  ctx.reply("📊 قسم متابعة التقدم");
 });
 
-bot.action("finance", async (ctx) => {
-  await ctx.answerCbQuery();
-  await ctx.reply("💰 منصة الثقافة المالية\nسيتم إضافة متابعة الدروس والتقدم قريباً.");
+bot.action("study", (ctx) => {
+  ctx.answerCbQuery();
+  ctx.reply("🧠 مساعد الدراسة");
 });
 
-bot.action("progress", async (ctx) => {
-  await ctx.answerCbQuery();
-  await ctx.reply("📊 قسم متابعة التقدم\nسيتم ربط قاعدة البيانات لاحقاً.");
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log("Zezo Bot server started!");
 });
-
-bot.action("study", async (ctx) => {
-  await ctx.answerCbQuery();
-  await ctx.reply("🧠 مساعد الدراسة جاهز لمساعدتك في فهم الأسئلة والتدريب عليها.");
-});
-
-bot.action("about", async (ctx) => {
-  await ctx.answerCbQuery();
-  await ctx.reply("🤖 Zezo Bot\nإصدار 1.0\nبوت تعليمي لمتابعة التقدم.");
-});
-
-bot.action("home", async (ctx) => {
-  await ctx.answerCbQuery();
-  await ctx.reply("🏠 القائمة الرئيسية", Markup.inlineKeyboard([
-    [Markup.button.callback("📚 منصات التعليم", "platforms")],
-    [Markup.button.callback("📊 متابعة التقدم", "progress")],
-    [Markup.button.callback("🧠 مساعد الدراسة", "study")]
-  ]));
-});
-
-bot.launch().then(() => {
-  console.log("Zezo Bot is running!");
-}).catch(console.error);
-
-process.once("SIGINT", () => bot.stop("SIGINT"));
-process.once("SIGTERM", () => bot.stop("SIGTERM"));
